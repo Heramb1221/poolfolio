@@ -13,6 +13,10 @@ import {
 import { authenticate } from '../middleware/auth';
 import { validateRequest } from '../middleware/validate';
 import {
+  createInvestment,
+  getGroupInvestments,
+} from '../controllers/investment.controller';
+import {
   createGroupSchema,
   updateGroupSchema,
   groupIdParamSchema,
@@ -20,6 +24,10 @@ import {
   addMemberSchema,
   updateMemberRoleSchema,
 } from '../middleware/group.validation';
+import {
+  createInvestmentSchema,
+  getInvestmentsQuerySchema,
+} from '../middleware/investment.validation';
 
 const router = Router();
 
@@ -57,6 +65,18 @@ router.delete(
   '/:groupId/members/:memberId',
   validateRequest({ params: memberParamSchema }),
   removeMember
+);
+
+// Group investment routes
+router.post(
+  '/:groupId/investments',
+  validateRequest({ params: groupIdParamSchema, body: createInvestmentSchema }),
+  createInvestment
+);
+router.get(
+  '/:groupId/investments',
+  validateRequest({ params: groupIdParamSchema, query: getInvestmentsQuerySchema }),
+  getGroupInvestments
 );
 
 export default router;

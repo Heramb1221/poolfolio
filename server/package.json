@@ -7,7 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "node --import tsx --test src/__tests__/auth.test.ts src/__tests__/group.test.ts",
+    "test": "node --import tsx --test src/__tests__/auth.test.ts src/__tests__/group.test.ts src/__tests__/investment.test.ts",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
