@@ -11,7 +11,7 @@ Update only your assigned section.
 - [x] foundation
 - [x] Prisma
 - [x] auth
-- [ ] groups/roles
+- [x] groups/roles
 - [ ] investments
 - [ ] contributions
 - [ ] transactions
