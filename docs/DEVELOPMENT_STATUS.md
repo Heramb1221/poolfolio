@@ -8,9 +8,9 @@ Update only your assigned section.
 - [x] environment templates (.env.example) and .gitignore configured
 
 ## Backend
-- [ ] foundation
-- [ ] Prisma
-- [ ] auth
+- [x] foundation
+- [x] Prisma
+- [x] auth
 - [ ] groups/roles
 - [ ] investments
 - [ ] contributions

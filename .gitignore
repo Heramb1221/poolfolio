@@ -49,3 +49,5 @@ Thumbs.db
 scratch/
 tmp/
 temp/
+.db/
+server/.db/

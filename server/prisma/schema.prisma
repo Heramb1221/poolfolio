@@ -9,3 +9,275 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// -------------------------------------------------------------
+// Enums
+// -------------------------------------------------------------
+
+enum GroupRole {
+  LEADER
+  CO_LEADER
+  MEMBER
+}
+
+enum InvestmentType {
+  STOCK
+  IPO
+}
+
+enum InvestmentStatus {
+  DRAFT
+  OPEN
+  LOCKED
+  ACTIVE
+  SETTLED
+  CANCELLED
+}
+
+enum TransactionType {
+  CONTRIBUTION
+  WITHDRAWAL
+  BUY
+  SELL
+  ALLOTMENT
+  REFUND
+  DIVIDEND
+  FEE
+  TAX
+  ADJUSTMENT
+}
+
+enum SettlementStatus {
+  PENDING
+  SETTLED
+}
+
+enum DocumentType {
+  BROKER_STATEMENT
+  TRANSACTION_NOTE
+  IPO_ALLOTMENT
+  OTHER
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum ExtractionStatus {
+  PENDING_REVIEW
+  CONFIRMED
+  REJECTED
+}
+
+// -------------------------------------------------------------
+// Models
+// -------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  createdGroups        Group[]            @relation("GroupCreatedBy")
+  groupMemberships     GroupMember[]
+  contributions        Contribution[]
+  transactions         Transaction[]
+  settlements          Settlement[]
+  brokerConnections    BrokerConnection[]
+  uploadedDocuments    Document[]         @relation("DocumentUploadedBy")
+  confirmedExtractions AIExtraction[]     @relation("ExtractionConfirmedBy")
+
+  @@map("users")
+}
+
+model Group {
+  id          String   @id @default(uuid())
+  name        String
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  createdBy   User          @relation("GroupCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  members     GroupMember[]
+  investments Investment[]
+
+  @@index([createdById])
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String    @id @default(uuid())
+  groupId  String
+  userId   String
+  role     GroupRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+
+  // Relations
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("group_members")
+}
+
+model Investment {
+  id        String           @id @default(uuid())
+  groupId   String
+  name      String
+  symbol    String
+  type      InvestmentType
+  exchange  String?
+  broker    String?
+  status    InvestmentStatus @default(DRAFT)
+  startDate DateTime?
+  lockDate  DateTime?
+  endDate   DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  // Relations
+  group         Group          @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  contributions Contribution[]
+  transactions  Transaction[]
+  settlements   Settlement[]
+  documents     Document[]
+
+  @@index([groupId])
+  @@index([status])
+  @@index([symbol])
+  @@map("investments")
+}
+
+model Contribution {
+  id            String   @id @default(uuid())
+  investmentId  String
+  userId        String
+  amount        Decimal  @db.Decimal(18, 4)
+  contributedAt DateTime @default(now())
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  investment Investment @relation(fields: [investmentId], references: [id], onDelete: Restrict)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([investmentId])
+  @@index([userId])
+  @@index([investmentId, userId])
+  @@map("contributions")
+}
+
+model Transaction {
+  id              String          @id @default(uuid())
+  investmentId    String
+  userId          String?
+  type            TransactionType
+  quantity        Decimal?        @db.Decimal(18, 4)
+  price           Decimal?        @db.Decimal(18, 4)
+  amount          Decimal         @db.Decimal(18, 4)
+  transactionDate DateTime        @default(now())
+  reference       String?
+  notes           String?
+  createdAt       DateTime        @default(now())
+
+  // Relations
+  investment Investment @relation(fields: [investmentId], references: [id], onDelete: Restrict)
+  user       User?      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([investmentId])
+  @@index([userId])
+  @@index([type])
+  @@index([transactionDate])
+  @@map("transactions")
+}
+
+model Settlement {
+  id                  String           @id @default(uuid())
+  investmentId        String
+  userId              String
+  investedAmount      Decimal          @db.Decimal(18, 4)
+  ownershipPercentage Decimal          @db.Decimal(8, 4)
+  profitLoss          Decimal          @db.Decimal(18, 4)
+  finalAmount         Decimal          @db.Decimal(18, 4)
+  status              SettlementStatus @default(PENDING)
+  settledAt           DateTime?
+  createdAt           DateTime         @default(now())
+
+  // Relations
+  investment Investment @relation(fields: [investmentId], references: [id], onDelete: Restrict)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([investmentId, userId])
+  @@index([investmentId])
+  @@index([userId])
+  @@index([status])
+  @@map("settlements")
+}
+
+model BrokerConnection {
+  id             String   @id @default(uuid())
+  userId         String
+  broker         String
+  encryptedToken String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("broker_connections")
+}
+
+model Document {
+  id           String         @id @default(uuid())
+  investmentId String?
+  uploadedById String
+  fileName     String
+  fileUrl      String
+  documentType DocumentType   @default(OTHER)
+  status       DocumentStatus @default(UPLOADED)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Relations
+  investment  Investment?    @relation(fields: [investmentId], references: [id], onDelete: SetNull)
+  uploadedBy  User           @relation("DocumentUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+  extractions AIExtraction[]
+
+  @@index([investmentId])
+  @@index([uploadedById])
+  @@index([status])
+  @@map("documents")
+}
+
+model AIExtraction {
+  id            String           @id @default(uuid())
+  documentId    String
+  model         String
+  extractedData Json
+  confidence    Decimal?         @db.Decimal(5, 4)
+  status        ExtractionStatus @default(PENDING_REVIEW)
+  confirmedById String?
+  confirmedAt   DateTime?
+  createdAt     DateTime         @default(now())
+
+  // Relations
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  confirmedBy User?    @relation("ExtractionConfirmedBy", fields: [confirmedById], references: [id], onDelete: SetNull)
+
+  @@index([documentId])
+  @@index([status])
+  @@index([confirmedById])
+  @@map("ai_extractions")
+}
