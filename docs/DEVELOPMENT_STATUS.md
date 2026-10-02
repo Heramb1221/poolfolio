@@ -2,6 +2,11 @@
 
 Update only your assigned section.
 
+## Repository Setup
+- [x] project structure initialized (server/, mobile/, ai/, reports/, docs/)
+- [x] source of truth documentation established
+- [x] environment templates (.env.example) and .gitignore configured
+
 ## Backend
 - [ ] foundation
 - [ ] Prisma

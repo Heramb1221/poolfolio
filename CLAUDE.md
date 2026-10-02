@@ -1,39 +1,193 @@
-# Poolfolio — Claude Code Instructions
+# Poolfolio — Claude Instructions
 
 ## Project
-Poolfolio is a group investment tracker for friends who pool money into stocks and IPOs.
 
-## Source of truth
-Read only the documentation relevant to your assigned task:
-- docs/BUSINESS_RULES.md
-- docs/DATABASE_SPEC.md
-- docs/API_CONTRACT.md
-- docs/ACCOUNTING_RULES.md
-- docs/AI_SPEC.md
-- docs/ARCHITECTURE.md
-- docs/ROLES.md
+Poolfolio is a group investment tracking application for small groups of friends who pool money to invest in stocks and IPOs.
 
-Do not invent financial rules.
+The application tracks:
 
-## Non-negotiable rules
-1. Financial calculations are backend-only.
-2. Accounting code is the source of truth for ownership, P&L and settlement.
-3. Money uses PostgreSQL Decimal; never Float for financial amounts.
-4. Contribution amounts can change only while an investment is OPEN.
-5. Once LOCKED, the contribution basis and ownership basis are immutable.
-6. A later investment in the same stock/IPO is a new Investment record.
-7. AI never writes financial records without validation and explicit user confirmation.
-8. Never implement automated trading or real-money payments.
-9. Preserve transaction history; do not overwrite financial events.
-10. Do not modify another workstream's files unless integration is explicitly assigned.
+- groups
+- members
+- investments
+- contributions
+- ownership
+- transactions
+- P&L
+- settlements
+- reports
+- AI-assisted transaction/document extraction
+- anomaly detection
 
-## Engineering
-- Prefer simple modular code over premature abstractions.
-- Validate input at API boundaries.
-- Keep secrets in environment variables.
-- Run tests/build/typecheck relevant to your work before declaring completion.
-- Do not refactor unrelated code.
+The real money/accounting logic is handled by the backend.
 
-## Git
-Work on your assigned branch/worktree. Make small commits with clear messages.
-Update docs/DEVELOPMENT_STATUS.md only for your assigned section.
+---
+
+## Critical Rule
+
+AI must NEVER calculate or decide financial values.
+
+The backend accounting engine is the source of truth.
+
+Gemma may:
+
+- extract information
+- classify documents
+- explain computed results
+
+TabPFN may:
+
+- detect anomalous transaction patterns
+
+Neither AI system may directly modify financial records.
+
+All AI-generated structured data must be validated and confirmed before being written to the financial database.
+
+---
+
+## Ownership
+
+For every individual Investment:
+
+ownership_percentage =
+member_locked_contribution / total_locked_contributions
+
+Member P&L:
+
+member_profit_loss =
+investment_profit_loss × ownership_percentage
+
+Settlement:
+
+member_settlement =
+member_locked_contribution + member_profit_loss
+
+Ownership is based on capital contribution, NOT current market value.
+
+---
+
+## Investment Lifecycle
+
+DRAFT
+→ OPEN
+→ LOCKED
+→ ACTIVE
+→ SETTLED
+
+DRAFT/OPEN
+→ CANCELLED
+
+Once an investment is LOCKED:
+
+- member capital cannot be changed
+- ownership basis cannot change
+- contribution history must remain immutable
+- later investment events must be represented through transactions
+
+---
+
+## IPO
+
+IPO applications and actual allocated capital are different.
+
+Example:
+
+Applied: ₹20,000
+Allocated: ₹8,000
+Refunded: ₹12,000
+
+Actual investment capital = ₹8,000.
+
+The application and refund history must still be preserved.
+
+---
+
+## Stock Accounting
+
+BUY:
+
+quantity × price = cost
+
+SELL:
+
+quantity × price = revenue
+
+Realized P&L:
+
+sale revenue - cost basis
+
+Unrealized P&L:
+
+current market value - cost basis
+
+Fees and taxes must remain separately identifiable.
+
+---
+
+## Ledger
+
+Financial history must be preserved.
+
+Transaction types include:
+
+CONTRIBUTION
+WITHDRAWAL
+BUY
+SELL
+ALLOTMENT
+REFUND
+DIVIDEND
+FEE
+TAX
+ADJUSTMENT
+
+Do not silently overwrite historical financial events.
+
+---
+
+## Engineering Rules
+
+Use TypeScript.
+
+Use PostgreSQL.
+
+Use Prisma.
+
+Use Decimal for financial values.
+
+Do not use floating-point numbers for money.
+
+Keep financial calculations in backend services.
+
+Do not duplicate accounting logic in React Native.
+
+Use validation at API boundaries.
+
+Use authentication and authorization for every protected endpoint.
+
+Do not expose secrets to the mobile application.
+
+---
+
+## Before Changing Code
+
+Read the relevant files in:
+
+docs/
+
+Do not modify business rules unless explicitly instructed.
+
+If a requirement conflicts with an existing specification:
+
+STOP and explain the conflict before implementing it.
+
+---
+
+## Completion
+
+When finishing a task:
+
+1. Explain what was implemented.
+2. List files created/modified.
+3. Explain tests performed.
+4. Explain anything not completed.
+5. Explain any integration considerations for the next developer.
