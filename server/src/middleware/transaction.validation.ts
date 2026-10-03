@@ -23,10 +23,11 @@ const optionalDecimalStringValidator = z
 export const createTransactionSchema = z
   .object({
     type: z.nativeEnum(TransactionType, {
-      required_error: 'Transaction type is required',
-      errorMap: () => ({
+      errorMap: (issue) => ({
         message:
-          'Valid transaction types: CONTRIBUTION, WITHDRAWAL, BUY, SELL, ALLOTMENT, REFUND, DIVIDEND, FEE, TAX, ADJUSTMENT',
+          issue.code === 'invalid_type' && issue.received === 'undefined'
+            ? 'Transaction type is required'
+            : 'Valid transaction types: CONTRIBUTION, WITHDRAWAL, BUY, SELL, ALLOTMENT, REFUND, DIVIDEND, FEE, TAX, ADJUSTMENT',
       }),
     }),
     amount: decimalStringValidator,

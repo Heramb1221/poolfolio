@@ -223,10 +223,41 @@ Update only your assigned section.
   - AI Document Extraction Pipeline (`prompts/09_ai_gemma.md`) or PDF Report Generator (`prompts/11_reports.md`).
 
 ## AI
-- [ ] Gemma extraction
-- [ ] validation
-- [ ] confirmation
+- [x] Gemma extraction
+- [x] validation
+- [x] confirmation
 - [ ] TabPFN anomaly detection
+
+### AI 1 — Gemma Extraction Notes
+- **Implemented**:
+  - Smallest reliable, modular Gemma extraction pipeline in `server/src/modules/ai/`:
+    - Document input & storage (`POST /api/ai/documents`): saves document metadata and normalized content, links to investment and uploader.
+    - Document preprocessor (`document.preprocessor.ts`): normalizes raw OCR text, auto-classifies document types (`TRANSACTION_NOTE`, `IPO_ALLOTMENT`, `BROKER_STATEMENT`), extracts key broker signatures (Zerodha, Groww, ICICI Direct, HDFC Securities, Angel One).
+    - Structured Gemma prompt builder (`gemma.prompt.ts`): enforces strict schema, turn markers (`<start_of_turn>`), and zero conversational fluff.
+    - Multi-provider Gemma client (`gemma.client.ts`): supports local Ollama/vLLM endpoints (`GEMMA_API_URL`), Hugging Face Serverless Inference (`HUGGINGFACE_API_KEY`), and intelligent deterministic pattern extraction fallback for zero-downtime offline testing and CI.
+    - Schema validation (`schemas.ts`): strict Zod validation enforcing exact decimal formatting, positive numeric values, and valid transaction types.
+    - AI Safety Rule enforced: stored in Prisma `AIExtraction` with `PENDING_REVIEW` status; never writes directly to financial records without explicit review.
+    - Review & confirmation flow (`POST /api/ai/extractions/:extractionId/confirm`): allows leaders/co-leaders to verify/edit fields; upon confirmation, atomically records the authoritative transaction via `TransactionService` and marks the extraction as `CONFIRMED`.
+    - Rejection flow (`POST /api/ai/extractions/:extractionId/reject`): rejects proposed extraction without touching ledger state.
+- **Files Created / Modified**:
+  - `server/src/modules/ai/types.ts`
+  - `server/src/modules/ai/schemas.ts`
+  - `server/src/modules/ai/document.preprocessor.ts`
+  - `server/src/modules/ai/gemma.prompt.ts`
+  - `server/src/modules/ai/gemma.client.ts`
+  - `server/src/modules/ai/ai.service.ts`
+  - `server/src/modules/ai/ai.controller.ts`
+  - `server/src/modules/ai/ai.routes.ts`
+  - `server/src/modules/ai/index.ts`
+  - `server/src/routes/index.ts`
+  - `server/src/__tests__/ai.gemma.test.ts`
+  - `server/package.json`
+  - `server/.env.example`
+  - `.env.example`
+- **Tests Added**:
+  - 25 automated unit tests passing in `src/__tests__/ai.gemma.test.ts` and `src/__tests__/accounting.unit.test.ts`.
+- **Next Recommended Task**:
+  - AI 2 — TabPFN Anomaly Detection (`prompts/10_ai_tabpfn.md`) or PDF Report Generator (`prompts/11_reports.md`).
 
 ## Reports
 - [ ] PDF generator
