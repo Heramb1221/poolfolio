@@ -13,7 +13,7 @@ Update only your assigned section.
 - [x] auth
 - [x] groups/roles
 - [x] investments
-- [ ] contributions
+- [x] contributions
 - [ ] transactions
 - [ ] accounting
 - [ ] settlement
@@ -52,9 +52,49 @@ Update only your assigned section.
 - **Tests Added**:
   - 33 automated tests in `src/__tests__/investment.test.ts` covering creation, role authorization, cross-group security, lifecycle transitions, invalid transition rejections, deletion guards, and independent investments for identical symbols.
 - **Known Limitations**:
-  - Contributions and transactions are not yet enabled for investments; these are scheduled for subsequent tasks.
+  - Contributions and transactions were not yet enabled in Task 5; contributions are implemented in Task 6.
 - **Next Recommended Task**:
-  - Backend Task 6 — Contributions.
+  - Backend Task 6 — Contributions (Completed).
+
+### Task 6 — Contributions Implementation Notes
+- **Implemented**:
+  - Contribution creation (`POST /api/investments/:investmentId/contributions`):
+    - Enabled strictly during the `OPEN` lifecycle status.
+    - Members can contribute for themselves. Leaders and Co-Leaders can record contributions for other group members.
+    - Multiple contributions per member are supported during `OPEN`.
+    - Strictly rejects contributions when investment status is `DRAFT`, `LOCKED`, `ACTIVE`, `SETTLED`, or `CANCELLED`.
+  - Authoritative accounting calculation & retrieval (`GET /api/investments/:investmentId/contributions`):
+    - Backend calculation using `Prisma.Decimal` — no floating-point arithmetic.
+    - Returns exact decimal string formatting (`toFixed(4)`), total investment contribution sum, unique contributor count, and individual member breakdown.
+    - Supports query filter by `userId`.
+  - Single contribution retrieval (`GET /api/investments/:investmentId/contributions/:contributionId`):
+    - Full details with user metadata.
+  - Contribution update (`PATCH /api/investments/:investmentId/contributions/:contributionId`):
+    - Mutable only while investment is `OPEN`.
+    - Members can modify their own contributions; Leaders and Co-Leaders can modify any group contribution.
+    - Strictly blocked once investment is `LOCKED` (freezing capital basis).
+  - Contribution cancellation / deletion (`DELETE /api/investments/:investmentId/contributions/:contributionId`):
+    - Deletion allowed only while investment is `OPEN`.
+    - Members can delete their own contributions; Leaders and Co-Leaders can delete group contributions.
+    - Blocked once investment is `LOCKED` or beyond.
+  - Cross-group security: Users from outside the investment's group cannot view, add, modify, or delete contributions.
+- **Files Changed / Created**:
+  - `server/src/types/contribution.ts`
+  - `server/src/middleware/contribution.validation.ts`
+  - `server/src/services/contribution.service.ts`
+  - `server/src/controllers/contribution.controller.ts`
+  - `server/src/routes/contribution.routes.ts`
+  - `server/src/routes/investment.routes.ts`
+  - `server/src/__tests__/contribution.test.ts`
+  - `server/package.json`
+- **Database Changes**:
+  - Leveraged existing `Contribution` model with `Decimal(18, 4)` precision.
+- **Tests Added**:
+  - 20 automated tests in `src/__tests__/contribution.test.ts` covering creation rules, `OPEN` status restrictions, `LOCKED` status freezing, authoritative totals, role updates, deletion rules, and cross-group protection.
+- **Known Limitations**:
+  - Transactions and ledger integration will be added in Task 7.
+- **Next Recommended Task**:
+  - Backend Task 7 — Transactions.
 
 ## Mobile
 - [ ] Expo foundation
