@@ -13,6 +13,7 @@
     "@hookform/resolvers": "^3.10.0",
     "@tanstack/react-query": "^5.66.0",
     "expo": "~52.0.30",
+    "expo-asset": "~11.0.5",
     "expo-constants": "~17.0.5",
     "expo-document-picker": "~13.0.3",
     "expo-linking": "~7.0.4",
