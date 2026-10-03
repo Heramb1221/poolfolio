@@ -38,13 +38,9 @@ Render executes:
    ```bash
    npm install && npx prisma generate && npm run build
    ```
-2. **Pre-Deploy Migration Command**:
+2. **Start Command (with automated migrations)**:
    ```bash
-   npx prisma migrate deploy
-   ```
-3. **Start Command**:
-   ```bash
-   npm start
+   npx prisma migrate deploy && npm start
    ```
 
 ---
