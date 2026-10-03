@@ -11,6 +11,8 @@ import {
   updateInvestmentSchema,
 } from '../middleware/investment.validation';
 import contributionRoutes from './contribution.routes';
+import transactionRoutes from './transaction.routes';
+import accountingRoutes from './accounting.routes';
 
 const router = Router();
 
@@ -19,6 +21,12 @@ router.use(authenticate);
 
 // Contribution subroutes
 router.use('/:investmentId/contributions', contributionRoutes);
+
+// Transaction subroutes
+router.use('/:investmentId/transactions', transactionRoutes);
+
+// Accounting endpoints (summary, ownership, pnl, settlements, settle)
+router.use('/', accountingRoutes);
 
 // Investment operations
 router.get(

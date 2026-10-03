@@ -14,9 +14,9 @@ Update only your assigned section.
 - [x] groups/roles
 - [x] investments
 - [x] contributions
-- [ ] transactions
-- [ ] accounting
-- [ ] settlement
+- [x] transactions
+- [x] accounting
+- [x] settlement
 
 ### Task 5 — Investments Implementation Notes
 - **Implemented**:
@@ -94,7 +94,52 @@ Update only your assigned section.
 - **Known Limitations**:
   - Transactions and ledger integration will be added in Task 7.
 - **Next Recommended Task**:
-  - Backend Task 7 — Transactions.
+  - Backend Task 7 — Transactions & Accounting (Completed).
+
+### Task 7 — Transactions & Accounting APIs Implementation Notes
+- **Implemented**:
+  - Pure Accounting Math Engine (`AccountingService`):
+    - Zero floating-point arithmetic; strict usage of `Prisma.Decimal` with unrounded intermediate steps.
+    - Deterministic ownership calculation (`ownership = memberLockedContribution / totalLockedContributions`).
+    - Multi-member unequal/equal capital allocations and multiple contribution consolidation.
+    - P&L calculation allocating returns/losses symmetrically based on fixed locked ownership.
+    - Separate accounting for dividends, fees, and taxes.
+    - Stock trading metrics (quantities bought/sold, average buy/sell prices, cost basis of sold shares, unrealized P&L on held shares).
+    - IPO capital basis handling (applied amount, allocated investment capital basis, refund preservation).
+    - Member payout/settlement formulas (`memberSettlement = memberLockedContribution + memberNetPnL`).
+  - Ledger Transaction Endpoints:
+    - Creation (`POST /api/investments/:investmentId/transactions`): LEADER/CO_LEADER only. Blocked on `DRAFT`, `CANCELLED`, or `SETTLED`. Supports all 10 transaction types (`CONTRIBUTION`, `WITHDRAWAL`, `BUY`, `SELL`, `ALLOTMENT`, `REFUND`, `DIVIDEND`, `FEE`, `TAX`, `ADJUSTMENT`). Validates target user is in group if provided.
+    - Listing (`GET /api/investments/:investmentId/transactions`): Group members only. Supports filtering by `type`, `userId`, `startDate`, `endDate`, and computes summary breakdown with total amounts per type.
+    - Single retrieval (`GET /api/investments/:investmentId/transactions/:transactionId`): Group members only.
+    - Updating (`PATCH /api/investments/:investmentId/transactions/:transactionId`): LEADER/CO_LEADER only. Modifies reference/notes/date without silent manipulation of historic amounts. Blocked on `SETTLED`.
+    - Historical preservation: Normal deletion endpoints are omitted per financial audit rules.
+  - Accounting & Settlement Endpoints:
+    - `GET /api/investments/:investmentId/ownership`: Returns authoritative fixed ownership percentages and locked capital.
+    - `GET /api/investments/:investmentId/pnl`: Returns authoritative realized P&L, fees, taxes, dividends, and member allocations (with optional `currentPrice` for unrealized valuation).
+    - `GET /api/investments/:investmentId/settlements`: Dynamic payout projection prior to close, or returns persisted settlement records once settled.
+    - `POST /api/investments/:investmentId/settle`: LEADER/CO_LEADER atomic transaction settling investment and persisting permanent `Settlement` records in database.
+    - `GET /api/investments/:investmentId/summary`: Full composite overview combining capital, trading stats, IPO metrics, performance, and member allocations.
+- **Files Changed / Created**:
+  - `server/src/types/transaction.ts`
+  - `server/src/types/accounting.ts`
+  - `server/src/middleware/transaction.validation.ts`
+  - `server/src/middleware/accounting.validation.ts`
+  - `server/src/services/transaction.service.ts`
+  - `server/src/services/accounting.service.ts`
+  - `server/src/services/index.ts`
+  - `server/src/controllers/transaction.controller.ts`
+  - `server/src/controllers/accounting.controller.ts`
+  - `server/src/routes/transaction.routes.ts`
+  - `server/src/routes/accounting.routes.ts`
+  - `server/src/routes/investment.routes.ts`
+  - `server/src/__tests__/accounting.unit.test.ts`
+  - `server/src/__tests__/transaction.test.ts`
+  - `server/package.json`
+- **Tests Added**:
+  - 10 pure accounting unit tests in `src/__tests__/accounting.unit.test.ts` covering equal/unequal ownership, multi-contributions, profit/loss allocations, fee/dividend impacts, unrealized price valuation, IPO allotment/refund rules, and Decimal precision.
+  - Integration tests in `src/__tests__/transaction.test.ts` covering role authorization, lifecycle guards, transaction CRUD, accounting endpoints, and settlement execution.
+- **Next Recommended Task**:
+  - Mobile Foundation & Core UI (`prompts/06_mobile_1_foundation.md` & `prompts/07_mobile_2_core_ui.md`) or AI Extraction pipeline (`prompts/09_ai_gemma.md`).
 
 ## Mobile
 - [ ] Expo foundation
