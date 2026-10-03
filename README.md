@@ -103,17 +103,37 @@ poolfolio/
 
 ---
 
+## Production Deployment (Render)
+
+Poolfolio includes an automated [render.yaml](render.yaml) blueprint for 1-click deployment on Render:
+
+1. **Database:** Render Managed PostgreSQL 16 (`poolfolio-db`).
+2. **API Web Service:** Node.js Express server (`poolfolio-api`).
+3. **Automated Migrations:** Runs `npx prisma migrate deploy` on every release.
+4. **Health Probe:** Monitored at `/api/health`.
+5. **Observability:** Sentry integration for exception tracking and latency monitoring.
+
+For complete step-by-step instructions, see the [Production Deployment Guide](docs/DEPLOYMENT.md).
+
+---
+
 ## Development Status
 
-The repository foundation has been initialized:
+All core modules and infrastructure have been built and tested:
 - [x] Monorepo directory structure established (`server/`, `mobile/`, `ai/`, `reports/`, `docs/`)
 - [x] Source of truth specifications and architectural rules documented in `docs/`
-- [x] Environment templates (`.env.example`) and comprehensive `.gitignore` configured
-- [ ] Backend foundation and Prisma configuration (Next step: `prompts/01_backend_1_foundation.md`)
-- [ ] Authentication, groups, investments, and accounting engine
-- [ ] Mobile Expo client foundation and core UI
-- [ ] AI extraction and anomaly pipelines
-- [ ] PDF reporting engine
-- [ ] Integration QA, deployment on Render, and friend testing
+- [x] Backend foundation, Prisma schema, and PostgreSQL database integration
+- [x] JWT + Argon2 authentication, RBAC groups & roles (Leader, Co-Leader, Member)
+- [x] Investment lifecycle management (`DRAFT` → `OPEN` → `LOCKED` → `ACTIVE` → `SETTLED`)
+- [x] Capital contributions, locking immutability, and authoritative accounting engine (`Prisma.Decimal`)
+- [x] Financial transactions ledger (`BUY`, `SELL`, `DIVIDEND`, `FEE`, `TAX`, `ALLOTMENT`, `REFUND`)
+- [x] Realized/unrealized P&L, trading performance metrics, and symmetric settlement distribution
+- [x] React Native (Expo) mobile client with NativeWind, TanStack Query, and authentication flows
+- [x] AI Subsystem: Gemma statement/contract-note parser with human-in-the-loop confirmation
+- [x] AI Subsystem: TabPFN tabular pattern audit with explainable factors (non-punitive)
+- [x] Branded A4 investment PDF report generator with PDFKit
+- [x] End-to-end integration QA test suite (54/54 automated tests passing)
+- [x] Production deployment configuration on Render with Sentry monitoring
 
-For detailed task-by-task tracking, refer to [docs/DEVELOPMENT_STATUS.md](file:///f:/Programming%20Languages/React%20Native/projects/poolfolio/docs/DEVELOPMENT_STATUS.md).
+For detailed task-by-task tracking, refer to [docs/DEVELOPMENT_STATUS.md](docs/DEVELOPMENT_STATUS.md).
+

@@ -1,6 +1,10 @@
 import app from './app';
 import { env } from './config/env';
 import prisma from './config/prisma';
+import { initSentry } from './config/sentry';
+
+// Initialize Sentry monitoring if configured
+initSentry();
 
 const server = app.listen(env.PORT, () => {
   // eslint-disable-next-line no-console

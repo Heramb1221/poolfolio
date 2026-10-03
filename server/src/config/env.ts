@@ -12,7 +12,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/poolfolio?schema=public'),
   JWT_SECRET: z.string().min(16).default('dev-jwt-secret-key-poolfolio-at-least-32-chars-long'),
   JWT_EXPIRES_IN: z.string().default('7d'),
-  CLIENT_ORIGIN: z.string().default('http://localhost:8081,http://localhost:19006'),
+  CLIENT_ORIGIN: z.string().default('http://localhost:8081,http://localhost:19006,*'),
+  SENTRY_DSN: z.string().optional(),
+  SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().default(0.2),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

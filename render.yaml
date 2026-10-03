@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: poolfolio-api
+    runtime: node
+    plan: starter
+    region: oregon
+    rootDir: server
+    buildCommand: npm install && npx prisma generate && npm run build
+    preDeployCommand: npx prisma migrate deploy
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: poolfolio-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CLIENT_ORIGIN
+        value: '*'
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: 0.2
+      - key: GEMMA_API_URL
+        sync: false
+      - key: GEMMA_MODEL_NAME
+        value: gemma2:2b
+      - key: HUGGINGFACE_API_KEY
+        sync: false
+      - key: TABPFN_API_URL
+        sync: false
+
+databases:
+  - name: poolfolio-db
+    plan: starter
+    region: oregon
+    databaseName: poolfolio
+    user: poolfolio

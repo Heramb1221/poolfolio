@@ -220,7 +220,45 @@ Update only your assigned section.
   - `mobile/app/(app)/investments/create.tsx`
   - `mobile/app/(app)/investments/[investmentId].tsx`
 - **Next Recommended Task**:
-  - AI Document Extraction Pipeline (`prompts/09_ai_gemma.md`) or PDF Report Generator (`prompts/11_reports.md`).
+  - Mobile 3 — AI & Reports UI (Completed).
+
+### Mobile 3 — AI & Reports UI Notes
+- **Implemented**:
+  - Document / statement upload flow (`DocumentUploadModal.tsx`):
+    - Document picker integration (`expo-document-picker`) and direct text entry.
+    - Pre-configured contract note and allotment presets (Zerodha, Groww, IPO Allotment) for streamlined testing.
+    - Real-time Gemma extraction processing state with visual indicator.
+  - Extraction Review & Confirmation Modal (`ExtractionReviewModal.tsx`):
+    - Prominently displays all proposed records with amber "PROPOSED DATA (PENDING REVIEW)" badge and AI safety disclaimer.
+    - Allows user verification and field editing (type, amount, quantity, price, reference, date, notes).
+    - Confirmation action calls backend ledger write endpoint (`POST /api/ai/extractions/:id/confirm`) atomically recording the authoritative transaction.
+    - Rejection action (`POST /api/ai/extractions/:id/reject`) allows discarding without modifying ledger.
+    - Strict financial compliance: The mobile client never writes directly to financial records without backend verification.
+  - TabPFN Anomaly Detection UI (`AnomalyReportCard.tsx`):
+    - Displays overall risk score badge (emerald for normal, amber for elevated risk).
+    - "Run Audit" on-demand action to trigger backend TabPFN feature extraction and scoring.
+    - Explainable contributing factors breakdown for each transaction.
+    - Non-punitive language throughout (no fraud labels).
+    - Highlights flagged transactions in the Ledger history tab.
+  - Investment PDF Report Download & Open (`reports.api.ts`, `useReports.ts`):
+    - Integrated "PDF Report" action button in investment detail screen.
+    - Opens authoritative server-rendered PDF report via `expo-linking` (`Linking.openURL`).
+  - Added dedicated "AI Audit" tab to `InvestmentDetailScreen` (`[investmentId].tsx`).
+- **Files Created / Modified**:
+  - `mobile/package.json`
+  - `mobile/package-lock.json`
+  - `mobile/src/types/api.ts`
+  - `mobile/src/api/ai.api.ts`
+  - `mobile/src/api/reports.api.ts`
+  - `mobile/src/hooks/useAI.ts`
+  - `mobile/src/hooks/useReports.ts`
+  - `mobile/src/components/ai/DocumentUploadModal.tsx`
+  - `mobile/src/components/ai/ExtractionReviewModal.tsx`
+  - `mobile/src/components/ai/AnomalyReportCard.tsx`
+  - `mobile/app/(app)/investments/[investmentId].tsx`
+- **Validation**:
+  - `mobile/` typecheck clean (`tsc --noEmit`).
+  - `server/` unit tests: 36/36 tests passing.
 
 ## AI
 - [x] Gemma extraction
@@ -319,9 +357,39 @@ Update only your assigned section.
   - Mobile 3 — AI & Reports UI (`prompts/08_mobile_3_ai_reports.md`).
 
 ## Integration
-- [ ] end-to-end flow
-- [ ] Render deployment
-- [ ] Sentry
-- [ ] production configuration
+- [x] end-to-end flow
+- [x] Render deployment
+- [x] Sentry
+- [x] production configuration
 - [ ] demo data
 - [ ] friend testing
+
+### Deployment & Production Notes (Task 13)
+- **Implemented**:
+  - Declarative Render Blueprint (`render.yaml`) configuring `poolfolio-api` web service and `poolfolio-db` managed PostgreSQL database.
+  - Production database migration pipeline: `npm run prisma:deploy` (`npx prisma migrate deploy`).
+  - Enhanced production health probe (`GET /api/health`) reporting database ping, uptime seconds, version, environment, and services health metadata.
+  - Sentry exception tracking and performance tracing via `@sentry/node`, initialized in `server/src/config/sentry.ts` and wired into centralized `errorHandler`.
+  - Production CORS configuration allowing wildcard and custom frontend origins.
+  - Production deployment guide documented in `docs/DEPLOYMENT.md` and referenced in root `README.md`.
+- **Files Created / Modified**:
+  - `render.yaml`
+  - `docs/DEPLOYMENT.md`
+  - `README.md`
+  - `server/src/config/sentry.ts`
+  - `server/src/config/env.ts`
+  - `server/src/server.ts`
+  - `server/src/middleware/errorHandler.ts`
+  - `server/src/controllers/health.controller.ts`
+  - `server/package.json`
+  - `server/.env.example`
+  - `.env.example`
+  - `docs/DEVELOPMENT_STATUS.md`
+- **Validation**:
+  - `npm run test:unit`: 55/55 tests passing across 28 suites including Stage 10 health check.
+  - `npm run typecheck` in both `server/` and `mobile/`: exited with code `0`.
+  - `npm run build` in `server/`: exited with code `0`.
+- **Next Recommended Task**:
+  - Task 14: Final Review & Polish (`prompts/14_final_review.md`).
+
+

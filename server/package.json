@@ -7,11 +7,12 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "node --import tsx --test src/__tests__/auth.test.ts src/__tests__/group.test.ts src/__tests__/investment.test.ts src/__tests__/contribution.test.ts src/__tests__/accounting.unit.test.ts src/__tests__/transaction.test.ts src/__tests__/ai.gemma.test.ts src/__tests__/ai.tabpfn.test.ts src/__tests__/reports.pdf.test.ts",
-    "test:unit": "node --import tsx --test src/__tests__/accounting.unit.test.ts src/__tests__/ai.gemma.test.ts src/__tests__/ai.tabpfn.test.ts src/__tests__/reports.pdf.test.ts",
+    "test": "node --import tsx --test src/__tests__/auth.test.ts src/__tests__/group.test.ts src/__tests__/investment.test.ts src/__tests__/contribution.test.ts src/__tests__/accounting.unit.test.ts src/__tests__/transaction.test.ts src/__tests__/ai.gemma.test.ts src/__tests__/ai.tabpfn.test.ts src/__tests__/reports.pdf.test.ts src/__tests__/integration.e2e.test.ts",
+    "test:unit": "node --import tsx --test src/__tests__/accounting.unit.test.ts src/__tests__/ai.gemma.test.ts src/__tests__/ai.tabpfn.test.ts src/__tests__/reports.pdf.test.ts src/__tests__/integration.e2e.test.ts",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "prisma db seed"
   },
   "prisma": {
@@ -27,6 +28,7 @@
   ],
   "dependencies": {
     "@prisma/client": "^6.4.1",
+    "@sentry/node": "^11.4.0",
     "argon2": "^0.41.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

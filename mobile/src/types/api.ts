@@ -260,3 +260,125 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
 }
+
+// -------------------------------------------------------------
+// AI Document & Anomaly Detection Types
+// -------------------------------------------------------------
+
+export type DocumentType =
+  | 'BROKER_STATEMENT'
+  | 'TRANSACTION_NOTE'
+  | 'IPO_ALLOTMENT'
+  | 'OTHER';
+
+export type DocumentStatus =
+  | 'UPLOADED'
+  | 'PROCESSING'
+  | 'PROCESSED'
+  | 'FAILED';
+
+export type ExtractionStatus =
+  | 'PENDING_REVIEW'
+  | 'CONFIRMED'
+  | 'REJECTED';
+
+export interface ExtractedTransactionItem {
+  type: TransactionType;
+  symbol: string;
+  investmentName?: string;
+  amount: string;
+  quantity?: string;
+  price?: string;
+  transactionDate?: string;
+  reference?: string;
+  notes?: string;
+  confidence: number;
+}
+
+export interface AIExtractionOutput {
+  documentType: DocumentType;
+  broker?: string;
+  detectedDate?: string;
+  items: ExtractedTransactionItem[];
+  summary: string;
+  rawNotes?: string;
+  overallConfidence: number;
+}
+
+export interface AIExtraction {
+  id: string;
+  documentId: string;
+  model: string;
+  extractedData: AIExtractionOutput;
+  confidence: number | string | null;
+  status: ExtractionStatus;
+  confirmedById: string | null;
+  confirmedAt: string | null;
+  createdAt: string;
+}
+
+export interface DocumentRecord {
+  id: string;
+  investmentId: string | null;
+  uploadedById: string;
+  fileName: string;
+  fileUrl: string;
+  documentType: DocumentType;
+  status: DocumentStatus;
+  createdAt: string;
+  updatedAt: string;
+  extractions?: AIExtraction[];
+}
+
+export interface UploadDocumentInput {
+  investmentId?: string;
+  documentType?: DocumentType;
+  fileName: string;
+  content: string;
+  fileUrl?: string;
+}
+
+export interface ConfirmExtractionInput {
+  investmentId: string;
+  itemIndex?: number;
+  type: TransactionType;
+  amount: string;
+  quantity?: string;
+  price?: string;
+  transactionDate?: string;
+  reference?: string;
+  notes?: string;
+  userId?: string;
+}
+
+export interface AnomalyFactor {
+  feature: string;
+  description: string;
+  impactScore: number;
+}
+
+export interface TransactionAnomalyResult {
+  transactionId: string;
+  type: TransactionType;
+  amount: string;
+  transactionDate: string;
+  reference: string | null;
+  userId: string | null;
+  userName: string | null;
+  anomalyScore: number;
+  isAnomaly: boolean;
+  contributingFactors: AnomalyFactor[];
+}
+
+export interface InvestmentAnomalyReport {
+  investmentId: string;
+  investmentName: string;
+  symbol: string;
+  analyzedAt: string;
+  totalTransactionsAnalyzed: number;
+  anomaliesDetectedCount: number;
+  overallRiskScore: number;
+  summary: string;
+  transactions: TransactionAnomalyResult[];
+}
+

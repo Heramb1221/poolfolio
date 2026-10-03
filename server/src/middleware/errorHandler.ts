@@ -41,6 +41,17 @@ export const errorHandler: ErrorRequestHandler = (
   // eslint-disable-next-line no-console
   console.error('Unhandled Server Error:', err);
 
+  // Report to Sentry in production
+  if (env.SENTRY_DSN) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { Sentry } = require('../config/sentry');
+      Sentry.captureException(err);
+    } catch {
+      // Ignore reporting error to prevent masking primary failure
+    }
+  }
+
   res.status(500).json({
     success: false,
     error: {
