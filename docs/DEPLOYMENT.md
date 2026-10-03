@@ -36,7 +36,7 @@ Set the following environment variables in the Render dashboard under `poolfolio
 Render executes:
 1. **Build Command**:
    ```bash
-   npm install && npx prisma generate && npm run build
+   npm install --include=dev && npx prisma generate && npm run build
    ```
 2. **Start Command (with automated migrations)**:
    ```bash
