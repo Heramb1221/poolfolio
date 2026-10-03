@@ -287,9 +287,36 @@ Update only your assigned section.
   - PDF Report Generator (`prompts/11_reports.md`) (`GET /api/investments/:investmentId/report`).
 
 ## Reports
-- [ ] PDF generator
-- [ ] investment report
-- [ ] member breakdown
+- [x] PDF generator
+- [x] investment report
+- [x] member breakdown
+
+### Reports — PDF Generator Notes
+- **Implemented**:
+  - Backend investment PDF generator in `server/src/modules/reports/`:
+    - `InvestmentPDFBuilder` (`report.pdf.ts`): Builds professional, branded A4 PDF report with PDFKit.
+      - Includes Header, Group info, Investment metadata, lifecycle status, and key milestone dates.
+      - Performance summary cards: Total Capital, Total Bought, Cost Basis Held, Net P&L (ROI).
+      - Stock trading & fee breakdown (shares bought/sold/held, average buy/sell prices, dividends, fees, taxes).
+      - IPO metrics (applied amount, allocated capital basis, refunded capital).
+      - Member allocation table: Member name, locked capital contributed, ownership percentage, allocated P&L, projected/final settlement payout.
+      - Full transaction ledger table with dates, types, rates, amounts, and references.
+      - Compliance footer stating authoritative calculation by Poolfolio Accounting Engine.
+    - `ReportService` (`report.service.ts`): Coordinates fetching authoritative summary from `AccountingService` and transactions from `TransactionService`. Strictly obeys financial rule: does NOT recalculate money in the PDF layer.
+    - `ReportController` (`report.controller.ts`) and route:
+      - `GET /api/investments/:investmentId/report`: streams binary PDF buffer with appropriate `application/pdf` and `Content-Disposition: attachment` headers.
+- **Files Created / Modified**:
+  - `server/src/modules/reports/report.pdf.ts`
+  - `server/src/modules/reports/report.service.ts`
+  - `server/src/modules/reports/report.controller.ts`
+  - `server/src/modules/reports/index.ts`
+  - `server/src/routes/investment.routes.ts`
+  - `server/src/__tests__/reports.pdf.test.ts`
+  - `server/package.json`
+- **Tests Added**:
+  - 36 automated unit tests passing across `reports.pdf.test.ts`, `ai.tabpfn.test.ts`, `ai.gemma.test.ts`, and `accounting.unit.test.ts`.
+- **Next Recommended Task**:
+  - Mobile 3 — AI & Reports UI (`prompts/08_mobile_3_ai_reports.md`).
 
 ## Integration
 - [ ] end-to-end flow
