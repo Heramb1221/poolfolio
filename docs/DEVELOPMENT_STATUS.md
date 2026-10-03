@@ -142,16 +142,85 @@ Update only your assigned section.
   - Mobile Foundation & Core UI (`prompts/06_mobile_1_foundation.md` & `prompts/07_mobile_2_core_ui.md`) or AI Extraction pipeline (`prompts/09_ai_gemma.md`).
 
 ## Mobile
-- [ ] Expo foundation
-- [ ] auth
-- [ ] dashboard
-- [ ] groups
-- [ ] investments
-- [ ] contributions
-- [ ] transactions
-- [ ] settlement
+- [x] Expo foundation
+- [x] auth
+- [x] dashboard
+- [x] groups
+- [x] investments
+- [x] contributions
+- [x] transactions
+- [x] settlement
 - [ ] AI import
 - [ ] reports
+
+### Mobile Implementation Notes
+- **Implemented**:
+  - **Framework & Foundation**:
+    - React Native with Expo (Managed Workflow, Expo SDK 52).
+    - File-based navigation using `expo-router` v4 (`app/` directory).
+    - Tailwind CSS styling via `nativewind` v2 with dark financial theme.
+    - Asynchronous state management and cached data fetching using `@tanstack/react-query` v5.
+    - Type-safe forms with `react-hook-form`, `zod`, and `@hookform/resolvers/zod`.
+    - Session authentication and secure token persistence using `expo-secure-store`.
+  - **Architecture & Centralized API**:
+    - Strictly adheres to the **Critical Financial Rule**: presentation-only layer that never independently calculates ownership, P&L, or settlement.
+    - API client (`src/api/client.ts`) with automatic JWT injection, typed error formatting, and timeout management.
+    - Typed modular API services: `authApi`, `groupsApi`, `investmentsApi`, `contributionsApi`, `transactionsApi`, `accountingApi`.
+    - Reactive custom query hooks: `useAuth`, `useGroups`, `useInvestments`, `useAccounting`.
+  - **Screens & Navigation**:
+    - `app/_layout.tsx`: Root layout with `SafeAreaProvider`, `QueryClientProvider`, `AuthProvider`, and status bar.
+    - `app/(auth)/login.tsx` & `register.tsx`: Validated authentication screens with error states.
+    - `app/(app)/(tabs)/index.tsx`: Group dashboard and system status.
+    - `app/(app)/(tabs)/groups.tsx`: Group directory.
+    - `app/(app)/(tabs)/profile.tsx`: User profile and session sign-out.
+    - `app/(app)/groups/create.tsx`: Modal for group creation.
+    - `app/(app)/groups/[groupId].tsx`: Group detail with member roster and active investments.
+    - `app/(app)/investments/create.tsx`: Modal for stock and IPO investment creation.
+    - `app/(app)/investments/[investmentId].tsx`: Comprehensive investment view featuring:
+      - Lifecycle progression actions (`OPEN`, `LOCKED`, `ACTIVE`, `SETTLED`).
+      - Tabbed navigation across Overview, Capital contributions, Ledger transactions, and Settlements.
+      - Read-only display of backend-calculated ownership percentages, realized/unrealized P&L, trading metrics, and member payouts.
+- **Files Created**:
+  - `mobile/package.json`
+  - `mobile/app.json`
+  - `mobile/babel.config.js`
+  - `mobile/tailwind.config.js`
+  - `mobile/tsconfig.json`
+  - `mobile/nativewind-env.d.ts`
+  - `mobile/src/types/api.ts`
+  - `mobile/src/services/storage.ts`
+  - `mobile/src/api/client.ts`
+  - `mobile/src/api/auth.api.ts`
+  - `mobile/src/api/groups.api.ts`
+  - `mobile/src/api/investments.api.ts`
+  - `mobile/src/api/contributions.api.ts`
+  - `mobile/src/api/transactions.api.ts`
+  - `mobile/src/api/accounting.api.ts`
+  - `mobile/src/context/AuthContext.tsx`
+  - `mobile/src/hooks/useAuth.ts`
+  - `mobile/src/hooks/useGroups.ts`
+  - `mobile/src/hooks/useInvestments.ts`
+  - `mobile/src/hooks/useAccounting.ts`
+  - `mobile/src/components/ui/Button.tsx`
+  - `mobile/src/components/ui/Input.tsx`
+  - `mobile/src/components/ui/Card.tsx`
+  - `mobile/src/components/ui/Badge.tsx`
+  - `mobile/app/_layout.tsx`
+  - `mobile/app/+not-found.tsx`
+  - `mobile/app/(auth)/_layout.tsx`
+  - `mobile/app/(auth)/login.tsx`
+  - `mobile/app/(auth)/register.tsx`
+  - `mobile/app/(app)/_layout.tsx`
+  - `mobile/app/(app)/(tabs)/_layout.tsx`
+  - `mobile/app/(app)/(tabs)/index.tsx`
+  - `mobile/app/(app)/(tabs)/groups.tsx`
+  - `mobile/app/(app)/(tabs)/profile.tsx`
+  - `mobile/app/(app)/groups/create.tsx`
+  - `mobile/app/(app)/groups/[groupId].tsx`
+  - `mobile/app/(app)/investments/create.tsx`
+  - `mobile/app/(app)/investments/[investmentId].tsx`
+- **Next Recommended Task**:
+  - AI Document Extraction Pipeline (`prompts/09_ai_gemma.md`) or PDF Report Generator (`prompts/11_reports.md`).
 
 ## AI
 - [ ] Gemma extraction
