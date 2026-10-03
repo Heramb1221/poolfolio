@@ -17,4 +17,8 @@ router.get('/extractions/:extractionId', (req, res, next) => aiController.getExt
 router.post('/extractions/:extractionId/confirm', (req, res, next) => aiController.confirmExtraction(req, res, next));
 router.post('/extractions/:extractionId/reject', (req, res, next) => aiController.rejectExtraction(req, res, next));
 
+// Anomaly analysis endpoints (TabPFN)
+router.post('/anomaly-analysis/:investmentId', (req, res, next) => aiController.analyzeInvestmentAnomalies(req, res, next));
+router.get('/anomaly-analysis/:investmentId', (req, res, next) => aiController.getInvestmentAnomalies(req, res, next));
+
 export default router;

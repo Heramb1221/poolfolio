@@ -226,7 +226,7 @@ Update only your assigned section.
 - [x] Gemma extraction
 - [x] validation
 - [x] confirmation
-- [ ] TabPFN anomaly detection
+- [x] TabPFN anomaly detection
 
 ### AI 1 — Gemma Extraction Notes
 - **Implemented**:
@@ -254,10 +254,37 @@ Update only your assigned section.
   - `server/package.json`
   - `server/.env.example`
   - `.env.example`
+
+### AI 2 — TabPFN Anomaly Detection Notes
+- **Implemented**:
+  - Tabular feature extraction engine (`tabpfn.features.ts`):
+    - Computes deterministic features per transaction: Z-score relative to investment history, ratio to median transaction, ratio to total investment pool capital, transaction type frequency, user frequency ratio, time delta from prior transactions in hours, and price deviation ratio for equity buys/sells.
+  - TabPFN Client & statistical prior adapter (`tabpfn.client.ts`):
+    - Connects to external TabPFN inference service via `TABPFN_API_URL`.
+    - Provides deterministic statistical & prior-distribution anomaly scoring fallback with human-explainable contributing factors.
+    - Supports mock client injection (`setMockClient`) for testing.
+  - Anomaly Service (`tabpfn.service.ts`):
+    - `POST /api/ai/anomaly-analysis/:investmentId`: triggers feature extraction and tabular scoring across all transactions in the investment ledger.
+    - `GET /api/ai/anomaly-analysis/:investmentId`: retrieves cached or dynamic anomaly report.
+  - Strict AI Safety Adherence:
+    - Never modifies financial records.
+    - Never labels users or transactions as "fraud" or "fraudulent" (uses non-punitive descriptors: unusual pattern, elevated standard deviation, rapid cadence burst, etc.).
+- **Files Created / Modified**:
+  - `server/src/modules/ai/tabpfn.types.ts`
+  - `server/src/modules/ai/tabpfn.features.ts`
+  - `server/src/modules/ai/tabpfn.client.ts`
+  - `server/src/modules/ai/tabpfn.service.ts`
+  - `server/src/modules/ai/ai.controller.ts`
+  - `server/src/modules/ai/ai.routes.ts`
+  - `server/src/modules/ai/index.ts`
+  - `server/src/__tests__/ai.tabpfn.test.ts`
+  - `server/package.json`
+  - `server/.env.example`
+  - `.env.example`
 - **Tests Added**:
-  - 25 automated unit tests passing in `src/__tests__/ai.gemma.test.ts` and `src/__tests__/accounting.unit.test.ts`.
+  - 33 automated unit tests in `src/__tests__/ai.tabpfn.test.ts`, `src/__tests__/ai.gemma.test.ts`, and `src/__tests__/accounting.unit.test.ts`.
 - **Next Recommended Task**:
-  - AI 2 — TabPFN Anomaly Detection (`prompts/10_ai_tabpfn.md`) or PDF Report Generator (`prompts/11_reports.md`).
+  - PDF Report Generator (`prompts/11_reports.md`) (`GET /api/investments/:investmentId/report`).
 
 ## Reports
 - [ ] PDF generator

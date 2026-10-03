@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { aiService } from './ai.service';
+import { tabpfnService } from './tabpfn.service';
 import { confirmExtractionSchema, extractDocumentSchema, uploadDocumentSchema } from './schemas';
 import { UnauthorizedError } from '../../utils/errors';
 
@@ -130,6 +131,49 @@ export class AIController {
         success: true,
         data: result,
         message: 'AI Extraction rejected',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/ai/anomaly-analysis/:investmentId
+   * Run TabPFN anomaly analysis on an investment's transaction ledger.
+   */
+  public async analyzeInvestmentAnomalies(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new UnauthorizedError('Authentication required');
+      const { investmentId } = req.params;
+      const userId = req.user.id;
+
+      const report = await tabpfnService.analyzeInvestment(investmentId, userId);
+
+      res.status(200).json({
+        success: true,
+        data: report,
+        message: 'Anomaly pattern analysis completed successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/ai/anomaly-analysis/:investmentId
+   * Retrieve latest anomaly analysis report for an investment.
+   */
+  public async getInvestmentAnomalies(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) throw new UnauthorizedError('Authentication required');
+      const { investmentId } = req.params;
+      const userId = req.user.id;
+
+      const report = await tabpfnService.getLatestAnalysis(investmentId, userId);
+
+      res.status(200).json({
+        success: true,
+        data: report,
       });
     } catch (error) {
       next(error);
