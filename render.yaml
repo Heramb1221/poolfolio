@@ -2,7 +2,7 @@ services:
   - type: web
     name: poolfolio-api
     runtime: node
-    plan: starter
+    plan: free
     region: oregon
     rootDir: server
     buildCommand: npm install && npx prisma generate && npm run build
@@ -39,7 +39,7 @@ services:
 
 databases:
   - name: poolfolio-db
-    plan: starter
+    plan: free
     region: oregon
     databaseName: poolfolio
     user: poolfolio
