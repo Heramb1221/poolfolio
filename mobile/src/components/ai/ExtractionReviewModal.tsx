@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { BottomSheet } from '../feedback/BottomSheet';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { AIExtraction, ExtractedTransactionItem, TransactionType } from '../../types/api';
+import { PressableScale } from '../ui/PressableScale';
+import { AIExtraction, TransactionType } from '../../types/api';
 import { useConfirmExtraction, useRejectExtraction } from '../../hooks/useAI';
+import { colors, fonts, radius } from '../../theme/tokens';
 
 interface ExtractionReviewModalProps {
   visible: boolean;
@@ -20,27 +18,10 @@ interface ExtractionReviewModalProps {
   onSuccess: () => void;
 }
 
-const TRANSACTION_TYPES: TransactionType[] = [
-  'BUY',
-  'SELL',
-  'ALLOTMENT',
-  'REFUND',
-  'DIVIDEND',
-  'FEE',
-  'TAX',
-  'CONTRIBUTION',
-];
+const TRANSACTION_TYPES: TransactionType[] = ['BUY', 'SELL', 'ALLOTMENT', 'REFUND', 'DIVIDEND', 'FEE', 'TAX', 'CONTRIBUTION'];
 
-export function ExtractionReviewModal({
-  visible,
-  investmentId,
-  extraction,
-  onClose,
-  onSuccess,
-}: ExtractionReviewModalProps) {
+export function ExtractionReviewModal({ visible, investmentId, extraction, onClose, onSuccess }: ExtractionReviewModalProps) {
   const [selectedIdx, setSelectedIdx] = useState(0);
-
-  // Form states for the selected item
   const [type, setType] = useState<TransactionType>('BUY');
   const [amount, setAmount] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -48,11 +29,12 @@ export function ExtractionReviewModal({
   const [date, setDate] = useState('');
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [discardArmed, setDiscardArmed] = useState(false);
 
   const confirmMutation = useConfirmExtraction(investmentId);
   const rejectMutation = useRejectExtraction();
 
-  // Populate form whenever extraction or selected item changes
   useEffect(() => {
     if (extraction && extraction.extractedData.items.length > 0) {
       const item = extraction.extractedData.items[selectedIdx] || extraction.extractedData.items[0];
@@ -66,20 +48,25 @@ export function ExtractionReviewModal({
     }
   }, [extraction, selectedIdx]);
 
+  useEffect(() => {
+    if (visible) {
+      setError(null);
+      setDiscardArmed(false);
+      setSelectedIdx(0);
+    }
+  }, [visible]);
+
   if (!extraction) return null;
 
   const items = extraction.extractedData.items;
-  const currentItem = items[selectedIdx] || items[0];
-  const confidencePercent = extraction.confidence
-    ? Math.round(Number(extraction.confidence) * 100)
-    : 85;
+  const confidencePercent = extraction.confidence ? Math.round(Number(extraction.confidence) * 100) : 85;
 
   const handleConfirm = async () => {
     if (!amount.trim() || Number(amount) <= 0) {
-      Alert.alert('Validation Error', 'Transaction amount must be a positive decimal.');
+      setError('Transaction amount must be a positive decimal.');
       return;
     }
-
+    setError(null);
     try {
       await confirmMutation.mutateAsync({
         extractionId: extraction.id,
@@ -95,190 +82,120 @@ export function ExtractionReviewModal({
           notes: notes.trim() || undefined,
         },
       });
-
-      Alert.alert('Success', 'AI proposed transaction confirmed and recorded into the ledger!');
       onSuccess();
     } catch (err: any) {
-      Alert.alert('Confirmation Error', err.message || 'Failed to record transaction');
+      setError(err?.message || 'Failed to record transaction');
     }
   };
 
   const handleReject = async () => {
-    Alert.alert(
-      'Reject Extraction',
-      'Are you sure you want to discard this proposed extraction without recording it?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Discard',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await rejectMutation.mutateAsync(extraction.id);
-              onClose();
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to reject extraction');
-            }
-          },
-        },
-      ]
-    );
+    if (!discardArmed) {
+      setDiscardArmed(true);
+      return;
+    }
+    try {
+      await rejectMutation.mutateAsync(extraction.id);
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || 'Failed to reject extraction');
+    }
   };
 
+  const busy = confirmMutation.isPending || rejectMutation.isPending;
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/70">
-        <View className="bg-slate-900 rounded-t-3xl border-t border-slate-800 p-6 max-h-[90%]">
-          {/* Header */}
-          <View className="flex-row items-center justify-between pb-3 border-b border-slate-800">
-            <View>
-              <Text className="text-white text-lg font-bold">Review AI Extraction</Text>
-              <Text className="text-slate-400 text-xs mt-0.5">
-                Model Confidence: <Text className="text-emerald-400 font-semibold">{confidencePercent}%</Text>
-              </Text>
-            </View>
-            <TouchableOpacity onPress={onClose} className="p-2">
-              <Text className="text-slate-400 font-bold text-lg">✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* AI Safety Rule Notice Banner */}
-          <View className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 my-3">
-            <Text className="text-amber-400 text-xs font-bold">PROPOSED DATA — PENDING REVIEW</Text>
-            <Text className="text-amber-300/80 text-[11px] mt-0.5 leading-4">
-              AI assists data entry; deterministic accounting remains authoritative. Review and verify numbers before confirming to the group ledger.
-            </Text>
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false} className="mt-1">
-            {/* If multiple items were extracted, render item tab selector */}
-            {items.length > 1 && (
-              <View className="mb-4">
-                <Text className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">
-                  Extracted Items ({items.length}):
-                </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
-                  {items.map((it, idx) => (
-                    <TouchableOpacity
-                      key={idx}
-                      onPress={() => setSelectedIdx(idx)}
-                      className={`px-3 py-1.5 rounded-lg border mr-2 ${
-                        selectedIdx === idx
-                          ? 'bg-emerald-500/20 border-emerald-500'
-                          : 'bg-slate-800 border-slate-700'
-                      }`}
-                    >
-                      <Text
-                        className={`text-xs font-semibold ${
-                          selectedIdx === idx ? 'text-emerald-400' : 'text-slate-400'
-                        }`}
-                      >
-                        Item #{idx + 1}: {it.type} (INR {it.amount})
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Transaction Type Selector */}
-            <Text className="text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">
-              Transaction Type:
-            </Text>
-            <View className="flex-row flex-wrap gap-2 mb-4">
-              {TRANSACTION_TYPES.map((t) => (
-                <TouchableOpacity
-                  key={t}
-                  onPress={() => setType(t)}
-                  className={`py-1.5 px-3 rounded-lg border ${
-                    type === t
-                      ? 'bg-emerald-500/20 border-emerald-500'
-                      : 'bg-slate-800 border-slate-700'
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-semibold ${
-                      type === t ? 'text-emerald-400' : 'text-slate-400'
-                    }`}
-                  >
-                    {t}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Amount */}
-            <Input
-              label="Transaction Amount (INR)*"
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="decimal-pad"
-              placeholder="e.g. 50000.00"
-            />
-
-            {/* Quantity and Price */}
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <Input
-                  label="Quantity"
-                  value={quantity}
-                  onChangeText={setQuantity}
-                  keyboardType="decimal-pad"
-                  placeholder="e.g. 20"
-                />
-              </View>
-              <View className="flex-1">
-                <Input
-                  label="Price / Rate (INR)"
-                  value={price}
-                  onChangeText={setPrice}
-                  keyboardType="decimal-pad"
-                  placeholder="e.g. 2500.00"
-                />
-              </View>
-            </View>
-
-            {/* Date */}
-            <Input
-              label="Transaction Date (YYYY-MM-DD)"
-              value={date}
-              onChangeText={setDate}
-              placeholder="2026-04-10"
-            />
-
-            {/* Reference */}
-            <Input
-              label="Reference / Order ID"
-              value={reference}
-              onChangeText={setReference}
-              placeholder="e.g. ORD-98124"
-            />
-
-            {/* Notes */}
-            <Input
-              label="Notes"
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Brief comment or details"
-            />
-
-            {/* Actions */}
-            <View className="mt-4 mb-6 gap-3">
-              <Button
-                title="Confirm & Record to Ledger"
-                onPress={handleConfirm}
-                isLoading={confirmMutation.isPending}
-              />
-              <Button
-                title="Discard Proposed Extraction"
-                variant="outline"
-                onPress={handleReject}
-                disabled={confirmMutation.isPending || rejectMutation.isPending}
-              />
-            </View>
-          </ScrollView>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      locked={busy}
+      title="Review AI extraction"
+      subtitle={`Model confidence · ${confidencePercent}%`}
+      maxHeightRatio={0.94}
+    >
+      <View style={styles.banner}>
+        <Ionicons name="alert-circle" size={20} color={colors.warn} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.bannerTitle}>PROPOSED DATA · PENDING REVIEW</Text>
+          <Text style={styles.bannerText}>
+            AI assists data entry; the backend ledger stays authoritative. Verify every number before confirming.
+          </Text>
         </View>
       </View>
-    </Modal>
+
+      {error ? (
+        <Animated.View entering={FadeIn.duration(200)} style={styles.error}>
+          <Ionicons name="close-circle" size={17} color={colors.loss} />
+          <Text style={styles.errorText}>{error}</Text>
+        </Animated.View>
+      ) : null}
+
+      {items.length > 1 ? (
+        <>
+          <Text style={styles.label}>EXTRACTED ITEMS · {items.length}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20, flexGrow: 0, marginBottom: 14 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}>
+            {items.map((it, idx) => (
+              <PressableScale
+                key={idx}
+                onPress={() => setSelectedIdx(idx)}
+                scaleTo={0.95}
+                style={[styles.chip, selectedIdx === idx && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, selectedIdx === idx && styles.chipTextActive]}>
+                  #{idx + 1} · {it.type} · ₹{it.amount}
+                </Text>
+              </PressableScale>
+            ))}
+          </ScrollView>
+        </>
+      ) : null}
+
+      <Text style={styles.label}>TRANSACTION TYPE</Text>
+      <View style={styles.typeWrap}>
+        {TRANSACTION_TYPES.map((t) => (
+          <PressableScale key={t} onPress={() => setType(t)} scaleTo={0.95} style={[styles.chip, type === t && styles.chipActive]}>
+            <Text style={[styles.chipText, type === t && styles.chipTextActive]}>{t}</Text>
+          </PressableScale>
+        ))}
+      </View>
+
+      <Input label="Amount (INR) *" icon="cash-outline" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="e.g. 50000.00" />
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <View style={{ flex: 1 }}>
+          <Input label="Quantity" value={quantity} onChangeText={setQuantity} keyboardType="decimal-pad" placeholder="20" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Input label="Price / rate" value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="2500.00" />
+        </View>
+      </View>
+      <Input label="Date (YYYY-MM-DD)" icon="calendar-outline" value={date} onChangeText={setDate} placeholder="2026-04-10" />
+      <Input label="Reference / order ID" icon="barcode-outline" value={reference} onChangeText={setReference} placeholder="ORD-98124" />
+      <Input label="Notes" icon="create-outline" value={notes} onChangeText={setNotes} placeholder="Brief comment" />
+
+      <View style={{ gap: 10, marginTop: 4 }}>
+        <Button title="Confirm & record to ledger" icon="checkmark-circle" onPress={handleConfirm} isLoading={confirmMutation.isPending} disabled={rejectMutation.isPending} />
+        <Button
+          title={discardArmed ? 'Tap again to discard' : 'Discard proposal'}
+          variant={discardArmed ? 'danger' : 'secondary'}
+          icon="trash-outline"
+          onPress={handleReject}
+          isLoading={rejectMutation.isPending}
+          disabled={confirmMutation.isPending}
+        />
+      </View>
+    </BottomSheet>
   );
 }
+
+const styles = StyleSheet.create({
+  banner: { flexDirection: 'row', gap: 10, backgroundColor: colors.warnSoft, borderRadius: 16, padding: 13, marginBottom: 16 },
+  bannerTitle: { fontFamily: fonts.sansBold, fontSize: 11, letterSpacing: 1, color: colors.warn },
+  bannerText: { fontFamily: fonts.sans, fontSize: 12, color: colors.ink2, lineHeight: 18, marginTop: 3 },
+  error: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.lossSoft, padding: 12, borderRadius: 14, marginBottom: 14 },
+  errorText: { flex: 1, fontFamily: fonts.sansMedium, fontSize: 12.5, color: colors.loss },
+  label: { fontFamily: fonts.sansBold, fontSize: 11, letterSpacing: 1.3, color: colors.muted, marginBottom: 9 },
+  typeWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 18 },
+  chip: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: 'rgba(255,255,255,0.8)' },
+  chipActive: { backgroundColor: colors.primaryDeep, borderColor: colors.primaryDeep },
+  chipText: { fontFamily: fonts.sansSemi, fontSize: 12, color: colors.ink2 },
+  chipTextActive: { color: colors.white },
+});

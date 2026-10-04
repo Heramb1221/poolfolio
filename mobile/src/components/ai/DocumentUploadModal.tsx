@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-  TextInput,
-} from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { BottomSheet } from '../feedback/BottomSheet';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import { Spinner } from '../ui/Spinner';
+import { PressableScale } from '../ui/PressableScale';
+import { SegmentedTabs } from '../ui/SegmentedTabs';
 import { DocumentType, AIExtraction } from '../../types/api';
 import { useUploadDocument, useExtractDocument } from '../../hooks/useAI';
+import { colors, fonts, radius } from '../../theme/tokens';
 
 interface DocumentUploadModalProps {
   visible: boolean;
@@ -25,7 +22,7 @@ interface DocumentUploadModalProps {
 
 const PRESET_SAMPLES = [
   {
-    title: 'Zerodha Contract Note',
+    title: 'Zerodha contract note',
     type: 'TRANSACTION_NOTE' as DocumentType,
     fileName: 'zerodha_contract_note.txt',
     content: `CONTRACT NOTE - Zerodha Broking Limited
@@ -37,7 +34,7 @@ Net Amount: 57000.00
 Brokerage: 20.00 STT: 57.00`,
   },
   {
-    title: 'Groww Trade Confirmation',
+    title: 'Groww confirmation',
     type: 'TRANSACTION_NOTE' as DocumentType,
     fileName: 'groww_order_confirmation.txt',
     content: `Billionbrains Garage Services Private Limited (Groww)
@@ -51,7 +48,7 @@ Execution Price: Rs 1500.00
 Total Value: Rs 22500.00`,
   },
   {
-    title: 'IPO Allotment Advice',
+    title: 'IPO allotment advice',
     type: 'IPO_ALLOTMENT' as DocumentType,
     fileName: 'ipo_allotment_advice.txt',
     content: `BASIS OF ALLOTMENT ADVICE
@@ -64,183 +61,176 @@ Date: 2026-04-15`,
   },
 ];
 
-export function DocumentUploadModal({
-  visible,
-  investmentId,
-  symbol,
-  onClose,
-  onExtractionSuccess,
-}: DocumentUploadModalProps) {
+const DOC_TYPES = [
+  { id: 'TRANSACTION_NOTE' as DocumentType, label: 'Trade note' },
+  { id: 'IPO_ALLOTMENT' as DocumentType, label: 'IPO notice' },
+  { id: 'BROKER_STATEMENT' as DocumentType, label: 'Statement' },
+];
+
+export function DocumentUploadModal({ visible, investmentId, symbol, onClose, onExtractionSuccess }: DocumentUploadModalProps) {
   const [docType, setDocType] = useState<DocumentType>('TRANSACTION_NOTE');
   const [fileName, setFileName] = useState('');
   const [textContent, setTextContent] = useState('');
   const [step, setStep] = useState<'input' | 'extracting'>('input');
+  const [error, setError] = useState<string | null>(null);
 
   const uploadMutation = useUploadDocument();
   const extractMutation = useExtractDocument();
 
   const handlePickFile = async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['text/*', 'application/pdf'],
-        copyToCacheDirectory: true,
-      });
-
+      const result = await DocumentPicker.getDocumentAsync({ type: ['text/*', 'application/pdf'], copyToCacheDirectory: true });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const file = result.assets[0];
         setFileName(file.name);
-        // Pre-fill text content with file metadata for extraction
         setTextContent(
           `Document: ${file.name}\nSize: ${file.size} bytes\nTrade Note for ${symbol}\nBuy Qty: 10 Price: 1000 Net Amount: 10000`
         );
+        setError(null);
       }
     } catch {
-      Alert.alert('Notice', 'Could not open file picker. You can paste or type document text directly.');
+      setError('Could not open the file picker. You can paste or type the document text instead.');
     }
   };
 
-  const handleSelectPreset = (preset: typeof PRESET_SAMPLES[0]) => {
+  const handleSelectPreset = (preset: (typeof PRESET_SAMPLES)[number]) => {
     setDocType(preset.type);
     setFileName(preset.fileName);
     setTextContent(preset.content.replace(/{SYMBOL}/g, symbol));
+    setError(null);
   };
 
   const handleUploadAndExtract = async () => {
     if (!textContent.trim()) {
-      Alert.alert('Validation Error', 'Please select a file, paste statement text, or pick a preset sample.');
+      setError('Select a file, paste statement text, or pick a sample first.');
       return;
     }
-
+    setError(null);
     setStep('extracting');
-
     try {
-      // 1. Upload document to backend
       const document = await uploadMutation.mutateAsync({
         investmentId,
         fileName: fileName.trim() || `statement_${Date.now()}.txt`,
         documentType: docType,
         content: textContent,
       });
-
-      // 2. Trigger Gemma AI extraction
-      const extraction = await extractMutation.mutateAsync({
-        documentId: document.id,
-        contextSymbol: symbol,
-      });
-
+      const extraction = await extractMutation.mutateAsync({ documentId: document.id, contextSymbol: symbol });
       setStep('input');
       onExtractionSuccess(extraction);
     } catch (err: any) {
       setStep('input');
-      Alert.alert('AI Extraction Error', err.message || 'Failed to process document');
+      setError(err?.message || 'Failed to process document');
     }
   };
 
+  const busy = step === 'extracting';
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/70">
-        <View className="bg-slate-900 rounded-t-3xl border-t border-slate-800 p-6 max-h-[85%]">
-          {/* Header */}
-          <View className="flex-row items-center justify-between pb-4 border-b border-slate-800">
-            <View>
-              <Text className="text-white text-lg font-bold">Import Document with AI</Text>
-              <Text className="text-slate-400 text-xs mt-0.5">
-                Target Investment: <Text className="text-emerald-400 font-semibold">{symbol}</Text>
-              </Text>
-            </View>
-            <TouchableOpacity onPress={onClose} disabled={step === 'extracting'} className="p-2">
-              <Text className="text-slate-400 font-bold text-lg">✕</Text>
-            </TouchableOpacity>
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      locked={busy}
+      title="Import with AI"
+      subtitle={`Target investment · ${symbol}`}
+      maxHeightRatio={0.92}
+    >
+      {busy ? (
+        <View style={styles.busy}>
+          <Spinner size="large" />
+          <Text style={styles.busyTitle}>Analyzing with Gemma…</Text>
+          <Text style={styles.busyMsg}>Reading the document, parsing broker data and preparing proposed records for your review.</Text>
+        </View>
+      ) : (
+        <View>
+          {error ? (
+            <Animated.View entering={FadeIn.duration(200)} style={styles.error}>
+              <Ionicons name="alert-circle" size={17} color={colors.loss} />
+              <Text style={styles.errorText}>{error}</Text>
+            </Animated.View>
+          ) : null}
+
+          <Text style={styles.label}>QUICK SAMPLES</Text>
+          <View style={styles.chips}>
+            {PRESET_SAMPLES.map((p) => (
+              <PressableScale key={p.title} onPress={() => handleSelectPreset(p)} scaleTo={0.95} style={styles.chip}>
+                <Ionicons name="flash-outline" size={13} color={colors.primaryDark} />
+                <Text style={styles.chipText}>{p.title}</Text>
+              </PressableScale>
+            ))}
           </View>
 
-          {step === 'extracting' ? (
-            <View className="py-16 items-center justify-center">
-              <ActivityIndicator size="large" color="#10b981" />
-              <Text className="text-white font-semibold text-base mt-6">Analyzing with Gemma AI...</Text>
-              <Text className="text-slate-400 text-xs text-center mt-2 max-w-xs">
-                Preprocessing document text, parsing broker transaction data, and formatting proposed records.
-              </Text>
+          <Text style={styles.label}>DOCUMENT TYPE</Text>
+          <SegmentedTabs tabs={DOC_TYPES} value={docType} onChange={setDocType} />
+
+          <PressableScale onPress={handlePickFile} style={styles.picker}>
+            <View style={styles.pickerIcon}>
+              <Ionicons name={fileName ? 'document-attach' : 'cloud-upload-outline'} size={22} color={colors.primaryDark} />
             </View>
-          ) : (
-            <ScrollView showsVerticalScrollIndicator={false} className="mt-4">
-              {/* Preset Sample Quick Selectors */}
-              <Text className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">
-                Quick Test Samples:
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pickerTitle} numberOfLines={1}>
+                {fileName ? fileName : 'Choose a file'}
               </Text>
-              <View className="flex-row flex-wrap gap-2 mb-4">
-                {PRESET_SAMPLES.map((p, idx) => (
-                  <TouchableOpacity
-                    key={idx}
-                    onPress={() => handleSelectPreset(p)}
-                    className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2"
-                  >
-                    <Text className="text-xs text-emerald-400 font-medium">{p.title}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <Text style={styles.pickerSub}>PDF or text contract notes</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+          </PressableScale>
 
-              {/* Document Type Selector */}
-              <Text className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">
-                Document Classification:
-              </Text>
-              <View className="flex-row gap-2 mb-4">
-                {(['TRANSACTION_NOTE', 'IPO_ALLOTMENT', 'BROKER_STATEMENT'] as DocumentType[]).map((t) => (
-                  <TouchableOpacity
-                    key={t}
-                    onPress={() => setDocType(t)}
-                    className={`flex-1 py-2 px-1 rounded-lg border items-center ${
-                      docType === t
-                        ? 'bg-emerald-500/20 border-emerald-500'
-                        : 'bg-slate-800 border-slate-700'
-                    }`}
-                  >
-                    <Text
-                      className={`text-xs font-semibold ${
-                        docType === t ? 'text-emerald-400' : 'text-slate-400'
-                      }`}
-                    >
-                      {t === 'TRANSACTION_NOTE' ? 'Trade Note' : t === 'IPO_ALLOTMENT' ? 'IPO Notice' : 'Statement'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+          <Text style={styles.label}>DOCUMENT TEXT / OCR</Text>
+          <TextInput
+            value={textContent}
+            onChangeText={setTextContent}
+            placeholder="Paste contract note text, trade details or IPO allotment info…"
+            placeholderTextColor={colors.faint}
+            selectionColor={colors.primary}
+            multiline
+            textAlignVertical="top"
+            style={styles.textArea}
+          />
 
-              {/* File Picker Button */}
-              <TouchableOpacity
-                onPress={handlePickFile}
-                className="bg-slate-800/80 border border-dashed border-slate-600 rounded-xl p-4 items-center mb-4"
-              >
-                <Text className="text-emerald-400 font-semibold text-sm">
-                  {fileName ? `Attached: ${fileName}` : 'Choose File from Device'}
-                </Text>
-                <Text className="text-slate-400 text-xs mt-1">Supports PDF or Text contract notes</Text>
-              </TouchableOpacity>
-
-              {/* Statement Text Content Input */}
-              <Text className="text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">
-                Document Content / OCR Text:
-              </Text>
-              <TextInput
-                value={textContent}
-                onChangeText={setTextContent}
-                placeholder="Paste broker contract note text, trade details, or IPO allotment info..."
-                placeholderTextColor="#64748b"
-                multiline
-                numberOfLines={6}
-                className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 text-white text-xs leading-5 mb-4 h-28"
-                textAlignVertical="top"
-              />
-
-              {/* Submit Action */}
-              <Button
-                title="Extract with Gemma AI"
-                onPress={handleUploadAndExtract}
-                className="mt-2"
-              />
-            </ScrollView>
-          )}
+          <Button title="Extract with Gemma" icon="sparkles" onPress={handleUploadAndExtract} style={{ marginTop: 16 }} />
+          <Text style={styles.disclaimer}>AI only proposes data. Nothing is recorded until you review and confirm.</Text>
         </View>
-      </View>
-    </Modal>
+      )}
+    </BottomSheet>
   );
 }
+
+const styles = StyleSheet.create({
+  label: { fontFamily: fonts.sansBold, fontSize: 11, letterSpacing: 1.3, color: colors.muted, marginBottom: 9, marginTop: 4 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.primaryTint, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.pill },
+  chipText: { fontFamily: fonts.sansSemi, fontSize: 12, color: colors.primaryDark },
+  picker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1.4,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(16,185,129,0.5)',
+    backgroundColor: 'rgba(16,185,129,0.05)',
+    borderRadius: radius.md,
+    padding: 14,
+    marginBottom: 16,
+  },
+  pickerIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.primaryTint, alignItems: 'center', justifyContent: 'center' },
+  pickerTitle: { fontFamily: fonts.sansBold, fontSize: 14, color: colors.ink },
+  pickerSub: { fontFamily: fonts.sans, fontSize: 12, color: colors.muted, marginTop: 1 },
+  textArea: {
+    minHeight: 130,
+    borderWidth: 1.3,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.md,
+    padding: 14,
+    fontFamily: fonts.mono,
+    fontSize: 12,
+    lineHeight: 19,
+    color: colors.ink,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+  },
+  disclaimer: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.muted, textAlign: 'center', marginTop: 12 },
+  busy: { alignItems: 'center', paddingVertical: 44, gap: 12 },
+  busyTitle: { fontFamily: fonts.sansBold, fontSize: 17, color: colors.ink, marginTop: 8 },
+  busyMsg: { fontFamily: fonts.sans, fontSize: 13, color: colors.ink2, textAlign: 'center', lineHeight: 20, maxWidth: 290 },
+  error: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.lossSoft, padding: 12, borderRadius: 14, marginBottom: 14 },
+  errorText: { flex: 1, fontFamily: fonts.sansMedium, fontSize: 12.5, color: colors.loss },
+});

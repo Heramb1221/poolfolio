@@ -1,15 +1,17 @@
 import React from 'react';
 import { Stack, Redirect } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
-import { View, ActivityIndicator } from 'react-native';
+import { LoadingBlock } from '../../src/components/ui/Spinner';
+import { colors } from '../../src/theme/tokens';
+import { View } from 'react-native';
 
 export default function AppLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isInitializing } = useAuth();
 
-  if (isLoading) {
+  if (isInitializing) {
     return (
-      <View className="flex-1 bg-background items-center justify-center">
-        <ActivityIndicator size="large" color="#38bdf8" />
+      <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center' }}>
+        <LoadingBlock label="Loading your portfolio…" />
       </View>
     );
   }
@@ -21,29 +23,16 @@ export default function AppLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: '#111827' },
-        headerTintColor: '#38bdf8',
-        headerTitleStyle: { fontWeight: 'bold', color: '#ffffff' },
-        contentStyle: { backgroundColor: '#090d16' },
+        headerShown: false,
+        animation: 'slide_from_right',
+        contentStyle: { backgroundColor: colors.bg },
       }}
     >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="groups/[groupId]"
-        options={{ title: 'Group Details' }}
-      />
-      <Stack.Screen
-        name="groups/create"
-        options={{ title: 'Create Group', presentation: 'modal' }}
-      />
-      <Stack.Screen
-        name="investments/[investmentId]"
-        options={{ title: 'Investment Details' }}
-      />
-      <Stack.Screen
-        name="investments/create"
-        options={{ title: 'Create Investment', presentation: 'modal' }}
-      />
+      <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+      <Stack.Screen name="groups/[groupId]" />
+      <Stack.Screen name="groups/create" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="investments/[investmentId]" />
+      <Stack.Screen name="investments/create" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
     </Stack>
   );
 }

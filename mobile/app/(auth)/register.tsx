@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableOpacity,
-} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useAuth } from '../../src/hooks/useAuth';
 import { Input } from '../../src/components/ui/Input';
 import { Button } from '../../src/components/ui/Button';
+import { PressableScale } from '../../src/components/ui/PressableScale';
+import { AuthShell } from '../../src/components/layout/AuthShell';
+import { useToast } from '../../src/components/feedback/Toast';
+import { colors, fonts } from '../../src/theme/tokens';
 
 const registerSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters'),
@@ -26,6 +25,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 export default function RegisterScreen() {
   const router = useRouter();
   const { register } = useAuth();
+  const toast = useToast();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const {
@@ -34,115 +34,111 @@ export default function RegisterScreen() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-    },
+    defaultValues: { name: '', email: '', password: '' },
   });
 
   const onSubmit = async (data: RegisterFormData) => {
     setErrorMsg(null);
     try {
       await register(data);
+      toast.success('Account created', 'Welcome to Poolfolio');
       router.replace('/(app)/(tabs)');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to create account');
+      const msg = err?.message || 'Failed to create account';
+      setErrorMsg(msg);
+      toast.error('Sign up failed', msg);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-background"
+    <AuthShell
+      title="Create account"
+      subtitle="Pool investments with friends, with transparent accounting."
+      footer={
+        <View style={styles.footerRow}>
+          <Text style={styles.footerText}>Already have an account? </Text>
+          <PressableScale onPress={() => router.push('/(auth)/login')} hitSlop={8}>
+            <Text style={styles.link}>Sign in</Text>
+          </PressableScale>
+        </View>
+      }
     >
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
-        className="px-6 py-12"
-      >
-        <View className="mb-8">
-          <Text className="text-primary text-3xl font-extrabold tracking-tight">
-            Poolfolio
-          </Text>
-          <Text className="text-white text-2xl font-bold mt-2">
-            Create an Account
-          </Text>
-          <Text className="text-slate-400 text-sm mt-1">
-            Start pooling investments with friends with transparent accounting
-          </Text>
-        </View>
+      {errorMsg ? (
+        <Animated.View entering={FadeIn.duration(220)} style={styles.error}>
+          <Ionicons name="alert-circle" size={18} color={colors.loss} />
+          <Text style={styles.errorText}>{errorMsg}</Text>
+        </Animated.View>
+      ) : null}
 
-        {errorMsg && (
-          <View className="bg-red-950/60 border border-red-800 p-3.5 rounded-xl mb-4">
-            <Text className="text-red-300 text-sm">{errorMsg}</Text>
-          </View>
+      <Controller
+        control={control}
+        name="name"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <Input
+            label="Full name"
+            icon="person-outline"
+            placeholder="Alex Johnson"
+            autoCapitalize="words"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            error={errors.name?.message}
+          />
         )}
+      />
+      <Controller
+        control={control}
+        name="email"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <Input
+            label="Email"
+            icon="mail-outline"
+            placeholder="you@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            error={errors.email?.message}
+          />
+        )}
+      />
+      <Controller
+        control={control}
+        name="password"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <Input
+            label="Password (min 8 characters)"
+            icon="lock-closed-outline"
+            placeholder="••••••••"
+            secureTextEntry
+            autoCapitalize="none"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            value={value}
+            error={errors.password?.message}
+          />
+        )}
+      />
 
-        <Controller
-          control={control}
-          name="name"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <Input
-              label="Full Name"
-              placeholder="Alex Johnson"
-              autoCapitalize="words"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={errors.name?.message}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="email"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <Input
-              label="Email"
-              placeholder="user@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={errors.email?.message}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="password"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <Input
-              label="Password (min 8 chars)"
-              placeholder="••••••••"
-              secureTextEntry
-              autoCapitalize="none"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={errors.password?.message}
-            />
-          )}
-        />
-
-        <Button
-          title="Sign Up"
-          onPress={handleSubmit(onSubmit)}
-          isLoading={isSubmitting}
-          className="mt-2"
-        />
-
-        <View className="flex-row justify-center mt-6">
-          <Text className="text-slate-400 text-sm">Already have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-            <Text className="text-primary text-sm font-semibold">Sign In</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <Button title="Create account" icon="arrow-forward" onPress={handleSubmit(onSubmit)} isLoading={isSubmitting} style={{ marginTop: 6 }} />
+    </AuthShell>
   );
 }
+
+const styles = StyleSheet.create({
+  error: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.lossSoft,
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 16,
+  },
+  errorText: { flex: 1, fontFamily: fonts.sansMedium, fontSize: 13, color: colors.loss },
+  footerRow: { flexDirection: 'row', alignItems: 'center' },
+  footerText: { fontFamily: fonts.sans, color: colors.ink2, fontSize: 14 },
+  link: { fontFamily: fonts.sansBold, color: colors.primaryDark, fontSize: 14 },
+});

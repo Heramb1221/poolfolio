@@ -1,57 +1,20 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
+import { FloatingTabBar } from '../../../src/components/layout/FloatingTabBar';
+import { colors } from '../../../src/theme/tokens';
 
 export default function TabsLayout() {
   return (
     <Tabs
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
-        headerStyle: { backgroundColor: '#111827' },
-        headerTitleStyle: { color: '#ffffff', fontWeight: 'bold' },
-        tabBarStyle: {
-          backgroundColor: '#111827',
-          borderTopColor: '#1e293b',
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
-        tabBarActiveTintColor: '#38bdf8',
-        tabBarInactiveTintColor: '#64748b',
+        headerShown: false,
+        sceneStyle: { backgroundColor: colors.bg },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Dashboard',
-          tabBarLabel: ({ color }) => (
-            <Text style={{ color, fontSize: 12, fontWeight: '600' }}>
-              Dashboard
-            </Text>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="groups"
-        options={{
-          title: 'Groups',
-          tabBarLabel: ({ color }) => (
-            <Text style={{ color, fontSize: 12, fontWeight: '600' }}>
-              Groups
-            </Text>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarLabel: ({ color }) => (
-            <Text style={{ color, fontSize: 12, fontWeight: '600' }}>
-              Profile
-            </Text>
-          ),
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: 'Portfolio' }} />
+      <Tabs.Screen name="groups" options={{ title: 'Groups' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   );
 }

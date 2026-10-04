@@ -7,6 +7,8 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
+  /** True only during the first token/profile restore on app launch. */
+  isInitializing: boolean;
   isAuthenticated: boolean;
   login: (input: LoginInput) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
@@ -20,6 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isInitializing, setIsInitializing] = useState<boolean>(true);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -47,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Initialization error fallback
       } finally {
         setIsLoading(false);
+        setIsInitializing(false);
       }
     };
 
@@ -108,6 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         token,
         isLoading,
+        isInitializing,
         isAuthenticated: !!token && !!user,
         login,
         register,

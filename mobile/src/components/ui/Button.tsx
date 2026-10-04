@@ -1,55 +1,83 @@
 import React from 'react';
-import {
-  TouchableOpacity,
-  Text,
-  ActivityIndicator,
-  TouchableOpacityProps,
-} from 'react-native';
+import { ActivityIndicator, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { PressableScale } from './PressableScale';
+import { colors, fonts, gradients, radius, shadow } from '../../theme/tokens';
 
-interface ButtonProps extends TouchableOpacityProps {
+type Variant = 'primary' | 'secondary' | 'danger' | 'soft' | 'ghost';
+
+interface Props {
   title: string;
-  variant?: 'primary' | 'secondary' | 'danger' | 'outline';
+  onPress?: () => void;
+  variant?: Variant;
+  size?: 'md' | 'sm';
   isLoading?: boolean;
+  disabled?: boolean;
+  icon?: keyof typeof Ionicons.glyphMap;
+  style?: StyleProp<ViewStyle>;
+  fullWidth?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({
+export function Button({
   title,
+  onPress,
   variant = 'primary',
+  size = 'md',
   isLoading = false,
-  disabled,
-  className = '',
-  ...props
-}) => {
-  let bgClass = 'bg-primary';
-  let textClass = 'text-slate-950 font-semibold';
+  disabled = false,
+  icon,
+  style,
+  fullWidth = true,
+}: Props) {
+  const off = disabled || isLoading;
+  const gradient = variant === 'primary' ? gradients.primary : variant === 'danger' ? gradients.danger : null;
+  const fg =
+    gradient ? colors.white : variant === 'soft' ? colors.primaryDark : variant === 'ghost' ? colors.primaryDark : colors.ink;
+  const pad = size === 'sm' ? { paddingVertical: 9, paddingHorizontal: 14 } : { paddingVertical: 15, paddingHorizontal: 18 };
 
-  if (variant === 'secondary') {
-    bgClass = 'bg-surface border border-border';
-    textClass = 'text-white font-medium';
-  } else if (variant === 'danger') {
-    bgClass = 'bg-danger';
-    textClass = 'text-white font-semibold';
-  } else if (variant === 'outline') {
-    bgClass = 'bg-transparent border border-primary';
-    textClass = 'text-primary font-semibold';
-  }
-
-  if (disabled || isLoading) {
-    bgClass += ' opacity-50';
-  }
+  const inner = (
+    <View style={[styles.row, pad]}>
+      {isLoading ? (
+        <ActivityIndicator color={fg} />
+      ) : (
+        <>
+          {icon ? <Ionicons name={icon} size={size === 'sm' ? 15 : 18} color={fg} style={{ marginRight: 8 }} /> : null}
+          <Text style={[styles.text, { color: fg, fontSize: size === 'sm' ? 13 : 15.5 }]}>{title}</Text>
+        </>
+      )}
+    </View>
+  );
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      disabled={disabled || isLoading}
-      className={`py-3.5 px-4 rounded-xl items-center justify-center flex-row ${bgClass} ${className}`}
-      {...props}
+    <PressableScale
+      onPress={onPress}
+      disabled={off}
+      style={[
+        styles.base,
+        !fullWidth && { alignSelf: 'flex-start' },
+        gradient && (variant === 'primary' ? shadow.glow : null),
+        variant === 'secondary' && styles.secondary,
+        variant === 'soft' && { backgroundColor: colors.primaryTint },
+        off && { opacity: 0.55 },
+        style,
+      ]}
     >
-      {isLoading ? (
-        <ActivityIndicator color={variant === 'primary' ? '#090d16' : '#ffffff'} />
+      {gradient ? (
+        <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fill}>
+          {inner}
+        </LinearGradient>
       ) : (
-        <Text className={`text-base ${textClass}`}>{title}</Text>
+        inner
       )}
-    </TouchableOpacity>
+    </PressableScale>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  base: { borderRadius: radius.md, overflow: 'visible' },
+  fill: { borderRadius: radius.md },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  text: { fontFamily: fonts.sansBold, letterSpacing: 0.2 },
+  secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderStrong },
+});
